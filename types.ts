@@ -56,11 +56,11 @@ export interface ResumeData {
   cityState: string;
   linkedin: string;
   github: string;
-  
+
   objective: string;
   summary: string; // Manual summary
   softSkills: string[];
-  
+
   experiences: Experience[];
   education: Education[];
   skills: string[]; // Hard Skills
@@ -68,7 +68,7 @@ export interface ResumeData {
   projects: Project[];
   certifications: Certification[];
   courses: Course[];
-  
+
   // Additional Info
   availability: string;
   cnh: string;
@@ -86,3 +86,5 @@ export interface AppState {
   generatedContent: ResumeData | null; // The AI enhanced version
   isGenerating: boolean;
 }
+
+export type LLMProvider = 'openai' | 'groq' | 'gemini' | 'deepseek';

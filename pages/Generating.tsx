@@ -1,73 +1,72 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useResume } from '../context/ResumeContext';
-import { generateEnhancedResume } from '../services/geminiService';
+import { generateResumeWithLLM } from '../services/aiService';
 
 const Generating: React.FC = () => {
-  const { apiKey, resumeData, setGeneratedResume } = useResume();
+  const { userApiKey, llmProvider, resumeData, setGeneratedResume } = useResume();
   const navigate = useNavigate();
   const [status, setStatus] = useState("Connecting to AI...");
   const [progress, setProgress] = useState(10);
   const hasRun = useRef(false);
 
   useEffect(() => {
-    // Prevent double execution in React StrictMode
     if (hasRun.current) return;
     hasRun.current = true;
 
+    if (!userApiKey) {
+      // Block generation if no key
+      alert("API Key is missing. Please connect your AI provider.");
+      navigate('/');
+      return;
+    }
+
     const processResume = async () => {
       try {
-        // 1. Initial UI delay for smoothness
         await new Promise(r => setTimeout(r, 800));
         setStatus("Analyzing your experience...");
         setProgress(30);
 
         let enhancedData = resumeData;
-        
-        if (apiKey) {
-             setStatus("Enhancing descriptions with Gemini...");
-             setProgress(50);
-             
-             try {
-                // Race condition: Timeout after 30 seconds (increased) or get AI result
-                const aiPromise = generateEnhancedResume(apiKey, resumeData);
-                const timeoutPromise = new Promise<null>((_, reject) => 
-                    setTimeout(() => reject(new Error("Timeout")), 30000)
-                );
 
-                const result = await Promise.race([aiPromise, timeoutPromise]);
-                if (result) {
-                    enhancedData = result;
-                }
-             } catch (e) {
-                console.error("AI Generation failed or timed out, using raw data.", e);
-                // Fallback to raw data is implicitly handled since enhancedData = resumeData initially
-             }
-        } else {
-             // Mock enhancement delay if no key
-             await new Promise(r => setTimeout(r, 1500));
+        if (userApiKey) {
+          setStatus(`Enhancing descriptions with ${llmProvider}...`);
+          setProgress(50);
+
+          try {
+            const aiPromise = generateResumeWithLLM(llmProvider, userApiKey, resumeData);
+            const timeoutPromise = new Promise<null>((_, reject) =>
+              setTimeout(() => reject(new Error("Timeout")), 60000)
+            );
+
+            const result = await Promise.race([aiPromise, timeoutPromise]);
+            if (result) {
+              enhancedData = result;
+            }
+          } catch (e) {
+            console.error("AI Generation failed or timed out, using raw data.", e);
+            alert(`AI Generation failed: ${e instanceof Error ? e.message : 'Unknown error'}. Using raw data.`);
+          }
         }
 
         setStatus("Formatting layout...");
         setProgress(90);
-        
-        // Ensure generated resume is set before navigation
+
         setGeneratedResume(enhancedData);
-        
+
         await new Promise(r => setTimeout(r, 800));
         setProgress(100);
         navigate('/preview');
 
       } catch (criticalError) {
         console.error("Critical error in generation flow:", criticalError);
-        // Always navigate even on critical failure to avoid getting stuck
-        setGeneratedResume(resumeData); // Fallback
+        setGeneratedResume(resumeData);
         navigate('/preview');
       }
     };
 
     processResume();
-  }, [apiKey, resumeData, setGeneratedResume, navigate]);
+  }, [userApiKey, llmProvider, resumeData, setGeneratedResume, navigate]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-200">
@@ -82,9 +81,9 @@ const Generating: React.FC = () => {
         <div aria-live="polite" className="flex flex-col items-center gap-6" role="status">
           <div className="relative w-24 h-24">
             <div className="absolute inset-0 border-4 border-gray-200 dark:border-gray-700 rounded-full"></div>
-            <div className="absolute inset-0 border-t-4 border-primary rounded-full animate-spin" style={{animationDuration: '1s'}}></div>
+            <div className="absolute inset-0 border-t-4 border-primary rounded-full animate-spin" style={{ animationDuration: '1s' }}></div>
           </div>
-          
+
           <div className="h-16 flex flex-col items-center justify-center">
             <p className="text-xl font-medium text-gray-900 dark:text-white animate-pulse">{status}</p>
           </div>
