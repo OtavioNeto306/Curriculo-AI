@@ -56,7 +56,7 @@ export const generateResumeWithLLM = async (provider: LLMProvider, apiKey: strin
                 model = "gpt-4-turbo-preview";
             } else if (provider === 'groq') {
                 url = "https://api.groq.com/openai/v1/chat/completions";
-                model = "llama3-70b-8192";
+                model = "llama-3.3-70b-versatile";
             } else if (provider === 'deepseek') {
                 url = "https://api.deepseek.com/chat/completions";
                 model = "deepseek-chat";

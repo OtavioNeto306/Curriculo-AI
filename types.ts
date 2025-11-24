@@ -85,6 +85,7 @@ export interface AppState {
   selectedTemplate: TemplateType;
   generatedContent: ResumeData | null; // The AI enhanced version
   isGenerating: boolean;
+  plan: 'free' | 'paid';
 }
 
 export type LLMProvider = 'openai' | 'groq' | 'gemini' | 'deepseek';
